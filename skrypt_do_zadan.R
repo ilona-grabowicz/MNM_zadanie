@@ -43,9 +43,27 @@ liczba_unikalnych_liter('aBcbA')
 liczba_unikalnych_liter('RabarbArka')
 liczba_unikalnych_liter('')
 liczba_unikalnych_liter('a')
+
+#### Zadanie 3  
+library(data.table)
+
+# Subsetting the data for faster manipulations - running a command in the terminal:
+# head -n -1000 CPCT02220079.annotated.processed.vcf > test.vcf (from R it is also possible with system() but for some reason it doesn't work...)
+
+test_data <- read.csv('test.vcf', skip = 402, sep='\t', stringsAsFactors = F)
   
-  
-  
+library(vcfR)
+vcf <- read.vcfR('test.vcf', verbose = FALSE )
+
+# read two times the vcf file, first for the columns names, second for the data
+tmp_vcf<-readLines("CPCTtest.annotated.processed.vcf")
+tmp_vcf_data<-read.table("CPCTtest.annotated.processed.vcf", stringsAsFactors = FALSE)
+
+# filter for the columns names
+tmp_vcf<-tmp_vcf[-(grep("#CHROM",tmp_vcf)+1):-(length(tmp_vcf))]
+vcf_names<-unlist(strsplit(tmp_vcf[length(tmp_vcf)],"\t"))
+names(tmp_vcf_data)<-vcf_names
+vcf <- read.csv('CPCTtest.annotated.processed.vcf', skip=401, sep='\t', stringsAsFactors = F)
   
   
   
