@@ -140,12 +140,27 @@ data$GoNLv5_AF <- str_split(data$GoNLv5_AF, pattern=';GoNLv5_AN=') %>%
 data <- data %>% filter(GoNLv5_AF<0.01)  # Filtering for GoNLv5_AF <0.01
 #write.csv(x = data, 'data_with_GoNLv5_AF_less_than_0_01.csv')
   
-  
-  
-  
-  
-  
-  
-  
+#### Zadanie 6:
+
+#data <- test_data
+data <- full_data
+data <- data %>% # Selecting the DP - depth of coverage values:
+  separate(CPCT02220079R, c('GT', 'AD', 'DP'), sep=':',extra='drop') %>%
+  select('CHROM', 'DP') %>% 
+  filter(!is.na(as.numeric(CHROM))) # selecting only autosomal chromosomes
+data[is.na(data$DP)] <- 0 # Replacing '.' with 0
+data$DP <- as.numeric(data$DP)
+
+data_for_plot <- data %>% # Counting the means per chromosome
+  group_by(CHROM) %>% 
+  summarise(mean = mean(DP))
+
+data_for_plot$CHROM <- factor(data_for_plot$CHROM, levels=sort(as.numeric(data_for_plot$CHROM))) # Sorting the x axis.
+
+ggplot(data_for_plot, aes(CHROM, mean)) + # Creating a plot.
+  geom_bar(stat='identity') +
+  ylab('Mean depth of coverage') +
+  xlab('Chromosomes')
+ggsave('Sequencing_depth_per_chromosome.png')  
   
     
