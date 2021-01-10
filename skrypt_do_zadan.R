@@ -163,4 +163,68 @@ ggplot(data_for_plot, aes(CHROM, mean)) + # Creating a plot.
   xlab('Chromosomes')
 ggsave('sequencing_depth_per_chromosome.png')  
 write.csv(x = data_for_plot, 'sequencing_depth_per_chromosome.csv')
-    
+
+#### Zadanie 8:
+
+# Read-in the data:
+snv_data <- fread('T1_vs_N1_head.strelka.somatic.snvs.norm.vcf', skip = 209, sep='\t', stringsAsFactors = F) # fread() is optimised for speed
+indel_data <-  fread('T1_vs_N1_head.strelka.somatic.indels.norm.vcf', skip = 211, sep='\t', stringsAsFactors = F) # fread() is optimised for speed
+colnames(snv_data)[1] <- colnames(indel_data)[1] <- 'CHROM'
+
+## For indel data:
+format_col_names <- unlist(str_split(indel_data$FORMAT[1], ':')) # Extract names of the columns to be NORMAL and TUMOR split into.
+
+indel_data <- indel_data %>% separate(NORMAL, into = paste0(format_col_names, '_NORMAL'), sep=':') # Split the NORMAL and TUMOR columns 
+# into columns with different metrics
+indel_data <- indel_data %>% separate(TUMOR, into = paste0(format_col_names, '_TUMOR'), sep=':')
+# Change the comma-delimited values into dot-delimited:
+indel_data$TIR_NORMAL <- as.numeric(sub(",", ".", indel_data$TIR_NORMAL, fixed = TRUE))
+indel_data$TAR_NORMAL <- as.numeric(sub(",", ".", indel_data$TAR_NORMAL, fixed = TRUE))
+# Calculate the VAF for NORMAL according to the exercise task:
+indel_data$VAF_NORMAL <- indel_data$TIR_NORMAL / (indel_data$TIR_NORMAL + indel_data$TAR_NORMAL)
+# Change the comma-delimited values into dot-delimited:
+indel_data$TIR_TUMOR <- as.numeric(sub(",", ".", indel_data$TIR_TUMOR, fixed = TRUE))
+indel_data$TAR_TUMOR <- as.numeric(sub(",", ".", indel_data$TAR_TUMOR, fixed = TRUE))
+# Calculate the VAF for TUMOR according to the exercise task:
+indel_data$VAF_TUMOR <- indel_data$TIR_TUMOR / (indel_data$TIR_TUMOR + indel_data$TAR_TUMOR)
+# Save the file:
+write.csv(x = indel_data, 'indel_data.csv')
+
+## For SNVs:
+format_col_names <- unlist(str_split(snv_data$FORMAT[1], ':')) # Extract names of the columns to be NORMAL and TUMOR split into.
+
+snv_data <- snv_data %>% separate(NORMAL, into = paste0(format_col_names, '_NORMAL'), sep=':') # Split the NORMAL and TUMOR columns 
+# into columns with different metrics
+snv_data <- snv_data %>% separate(TUMOR, into = paste0(format_col_names, '_TUMOR'), sep=':')
+
+# NORMAL
+# Change the comma-delimited values into dot-delimited:
+snv_data$AU_NORMAL <- as.numeric(sub(",", ".", snv_data$AU_NORMAL, fixed = TRUE))
+snv_data$TU_NORMAL <- as.numeric(sub(",", ".", snv_data$TU_NORMAL, fixed = TRUE))
+snv_data$GU_NORMAL <- as.numeric(sub(",", ".", snv_data$GU_NORMAL, fixed = TRUE))
+snv_data$CU_NORMAL <- as.numeric(sub(",", ".", snv_data$CU_NORMAL, fixed = TRUE))
+# Calculate the VAF according to the exercise task:
+snv_data$VAF_NORMAL <- NA
+
+snv_data$VAF_NORMAL[snv_data$ALT=='A'] <- snv_data$AU_NORMAL[snv_data$ALT=='A'] / (snv_data$AU_NORMAL[snv_data$ALT=='A'] + snv_data$TU_NORMAL[snv_data$ALT=='A'])
+snv_data$VAF_NORMAL[snv_data$ALT=='T'] <- snv_data$TU_NORMAL[snv_data$ALT=='T'] / (snv_data$TU_NORMAL[snv_data$ALT=='T'] + snv_data$AU_NORMAL[snv_data$ALT=='T'])
+snv_data$VAF_NORMAL[snv_data$ALT=='G'] <- snv_data$GU_NORMAL[snv_data$ALT=='G'] / (snv_data$GU_NORMAL[snv_data$ALT=='G'] + snv_data$CU_NORMAL[snv_data$ALT=='G'])
+snv_data$VAF_NORMAL[snv_data$ALT=='C'] <- snv_data$CU_NORMAL[snv_data$ALT=='C'] / (snv_data$CU_NORMAL[snv_data$ALT=='C'] + snv_data$GU_NORMAL[snv_data$ALT=='C'])
+
+# TUMOR
+# Change the comma-delimited values into dot-delimited:
+snv_data$AU_TUMOR <- as.numeric(sub(",", ".", snv_data$AU_TUMOR, fixed = TRUE))
+snv_data$TU_TUMOR <- as.numeric(sub(",", ".", snv_data$TU_TUMOR, fixed = TRUE))
+snv_data$GU_TUMOR <- as.numeric(sub(",", ".", snv_data$GU_TUMOR, fixed = TRUE))
+snv_data$CU_TUMOR <- as.numeric(sub(",", ".", snv_data$CU_TUMOR, fixed = TRUE))
+# Calculate the VAF according to the exercise task:
+snv_data$VAF_TUMOR <- NA
+
+snv_data$VAF_TUMOR[snv_data$ALT=='A'] <- snv_data$AU_TUMOR[snv_data$ALT=='A'] / (snv_data$AU_TUMOR[snv_data$ALT=='A'] + snv_data$TU_TUMOR[snv_data$ALT=='A'])
+snv_data$VAF_TUMOR[snv_data$ALT=='T'] <- snv_data$TU_TUMOR[snv_data$ALT=='T'] / (snv_data$TU_TUMOR[snv_data$ALT=='T'] + snv_data$AU_TUMOR[snv_data$ALT=='T'])
+snv_data$VAF_TUMOR[snv_data$ALT=='G'] <- snv_data$GU_TUMOR[snv_data$ALT=='G'] / (snv_data$GU_TUMOR[snv_data$ALT=='G'] + snv_data$CU_TUMOR[snv_data$ALT=='G'])
+snv_data$VAF_TUMOR[snv_data$ALT=='C'] <- snv_data$CU_TUMOR[snv_data$ALT=='C'] / (snv_data$CU_TUMOR[snv_data$ALT=='C'] + snv_data$GU_TUMOR[snv_data$ALT=='C'])
+
+
+# Save the file:
+write.csv(x = snv_data, 'snv_data.csv')
