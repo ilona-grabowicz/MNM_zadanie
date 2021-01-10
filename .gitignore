@@ -1,2 +1,3 @@
 *.gz
 CPCT02220079.annotated.processed.vcf
+*strelka*
