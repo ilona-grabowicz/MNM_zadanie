@@ -161,6 +161,6 @@ ggplot(data_for_plot, aes(CHROM, mean)) + # Creating a plot.
   geom_bar(stat='identity') +
   ylab('Mean depth of coverage') +
   xlab('Chromosomes')
-ggsave('Sequencing_depth_per_chromosome.png')  
-  
+ggsave('sequencing_depth_per_chromosome.png')  
+write.csv(x = data_for_plot, 'sequencing_depth_per_chromosome.csv')
     
