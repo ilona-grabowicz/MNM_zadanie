@@ -45,32 +45,78 @@ liczba_unikalnych_liter('')
 liczba_unikalnych_liter('a')
 
 #### Zadanie 3  
-library(data.table)
-
 # Subsetting the data for faster manipulations - running a command in the terminal:
 # head -n -1000 CPCT02220079.annotated.processed.vcf > test.vcf (from R it is also possible with system() but for some reason it doesn't work...)
 
+library(data.table)
+# Reading-in the test data
 test_data <- read.csv('test.vcf', skip = 402, sep='\t', stringsAsFactors = F)
-  
-library(vcfR)
-vcf <- read.vcfR('test.vcf', verbose = FALSE )
+full_data <- fread('CPCT02220079.annotated.processed.vcf', skip = 402, sep='\t', stringsAsFactors = F) # fread() is optimised for speed
+colnames(test_data)[1] <- 'CHROM'
+colnames(full_data)[1] <- 'CHROM'
+data <- full_data
+subset_chr <- 12 # Subsetting the data:
+subset_from <- 112204691
+subset_to <- 112247789
+data_subset <- data[data$CHROM==subset_chr,]# selecting chromosome
+data_subset <- data_subset[data_subset$POS>=subset_from & data_subset$POS<= subset_to,] # selecting position
+write.csv(data_subset, paste0('vcf_subset_', subset_chr, '_', subset_from, '_', subset_to, '.vcf'))
 
-# read two times the vcf file, first for the columns names, second for the data
-tmp_vcf<-readLines("CPCTtest.annotated.processed.vcf")
-tmp_vcf_data<-read.table("CPCTtest.annotated.processed.vcf", stringsAsFactors = FALSE)
+#### Zadanie 4 
+## Zakladam, ze na wykresach maja byc dlugosci insercji i delecji razem, a nie na osobnych wykresach.
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
 
-# filter for the columns names
-tmp_vcf<-tmp_vcf[-(grep("#CHROM",tmp_vcf)+1):-(length(tmp_vcf))]
-vcf_names<-unlist(strsplit(tmp_vcf[length(tmp_vcf)],"\t"))
-names(tmp_vcf_data)<-vcf_names
-vcf <- read.csv('CPCTtest.annotated.processed.vcf', skip=401, sep='\t', stringsAsFactors = F)
-  
-  
-  
-  
-  
-  
-  
+data <- full_data
+# Counting the insertions and eletions lengths:
+data$del_len <- data$ins_len <- NA 
+data$del_len <- nchar(data$REF)-1  
+data$ins_len <- nchar(data$ALT)-1 
+data$indel_len <- data$ins_len + data$del_len 
+chromosomes <- unique(data$CHROM)
 
+# Making graphs:
+chr<-'8'
+draw_histograms <- function(chr) {
+  data_for_plot <- data %>% 
+    filter(indel_len>0) %>% 
+    filter(CHROM==chr)
+  ggplot(data_for_plot, aes(indel_len)) +
+    geom_histogram(binwidth = 10) +
+    xlab('Indel length') +
+    ylab('Indels count log10') + 
+    ggtitle(paste0('Chromosome ', chr)) +
+    scale_y_log10(labels=function(x) format(x, big.mark = " ", scientific = FALSE))
+}
+h1 <- draw_histograms(1)
+h2 <- draw_histograms(2)
+h3 <- draw_histograms(3)
+h4 <- draw_histograms(4)
+h5 <- draw_histograms(5)
+h6 <- draw_histograms(6)
+h7 <- draw_histograms(7)
+h8 <- draw_histograms(8)
+h9 <- draw_histograms(9)
+h10 <- draw_histograms(10)
+h11 <- draw_histograms(11)
+h12 <- draw_histograms(12)
+h13 <- draw_histograms(13)
+h14 <- draw_histograms(14)
+h15 <- draw_histograms(15)
+h16 <- draw_histograms(16)
+h17 <- draw_histograms(17)
+h18 <- draw_histograms(18)
+h19 <- draw_histograms(19)
+h20 <- draw_histograms(20)
+h21 <- draw_histograms(21)
+h22 <- draw_histograms(22)
+hX <- draw_histograms('X')
+hY <- draw_histograms('Y')
+hMT <- draw_histograms('MT')
 
-
+# Drawing all together:
+gg <- ggarrange(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, hX, hY, hMT,
+            nrow = 5, ncol = 5)
+ggsave('Indels.png', gg, height = 15, width=15)
+    
