@@ -22,7 +22,27 @@ co_druga_wielka(x)
 x <- c('')
 co_druga_wielka(x)
 
+#### Zadanie 2
+liczba_unikalnych_liter <- function(string_vector) {
+  if (nchar(string_vector)>0) {
+    string_vector <- tolower(string_vector) # Zamiana liter na male
+    chars <- str_split(string_vector, '') # Podzielenie stringu na pojedyncze litery
+    char_count <- data.frame(table(chars)) # Zliczenie poszczegolnych liter
+    char_count <- char_count[char_count$Freq>=2,] # Wybranie tych co maja conajmniej 2 wystapienia
+    n_chars <- nrow(char_count) # Zliczenie ile takich jest
+    n_chars # Zwrocenie wyniku
+  }
+  else {
+    n_chars <- 0
+    n_chars
+  }
+}
 
+liczba_unikalnych_liter('ABBA')
+liczba_unikalnych_liter('aBcbA')
+liczba_unikalnych_liter('RabarbArka')
+liczba_unikalnych_liter('')
+liczba_unikalnych_liter('a')
   
   
   
