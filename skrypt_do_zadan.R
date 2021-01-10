@@ -77,7 +77,7 @@ data$indel_len <- data$ins_len + data$del_len
 chromosomes <- unique(data$CHROM)
 
 # Making graphs:
-chr<-'8'
+# chr<-'8'
 draw_histograms <- function(chr) {
   data_for_plot <- data %>% 
     filter(indel_len>0) %>% 
@@ -119,4 +119,33 @@ hMT <- draw_histograms('MT')
 gg <- ggarrange(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, hX, hY, hMT,
             nrow = 5, ncol = 5)
 ggsave('Indels.png', gg, height = 15, width=15)
+
+#### Zadanie 5:
+
+library(tidyr)
+library(stringr)
+
+#data <- test_data
+data <- full_data
+data <- data %>% 
+  filter(FILTER=='PASS') %>% # Filtering for PASS in FILTER
+  filter(grepl('AF=0.5', INFO)) %>% # Filtering for heterozygotes
+  filter(grepl('GoNLv5_AF', INFO)) # Filtering for GoNLv5_AF present
+
+data$GoNLv5_AF <- str_split(data$INFO, pattern=';GoNLv5_AF=') %>% 
+    sapply( "[", 2 ) 
+data$GoNLv5_AF <- str_split(data$GoNLv5_AF, pattern=';GoNLv5_AN=') %>% 
+  sapply( "[", 1 ) %>% as.numeric()
+
+data <- data %>% filter(GoNLv5_AF<0.01)  # Filtering for GoNLv5_AF <0.01
+#write.csv(x = data, 'data_with_GoNLv5_AF_less_than_0_01.csv')
+  
+  
+  
+  
+  
+  
+  
+  
+  
     
