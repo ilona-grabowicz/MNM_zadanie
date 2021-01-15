@@ -22,6 +22,12 @@ co_druga_wielka(x)
 x <- c('')
 co_druga_wielka(x)
 
+#
+# Nie o to chodziło.  
+# co_druga_wielka('abcdef') powinno dać:
+# [aBcDeF, AbCdEf]
+#
+
 #### Zadanie 2
 liczba_unikalnych_liter <- function(string_vector) {
   if (nchar(string_vector)>0) {
@@ -44,6 +50,11 @@ liczba_unikalnych_liter('RabarbArka')
 liczba_unikalnych_liter('')
 liczba_unikalnych_liter('a')
 
+
+# 
+# Dobrze
+#
+
 #### Zadanie 3  
 # Subsetting the data for faster manipulations - running a command in the terminal:
 # head -n -1000 CPCT02220079.annotated.processed.vcf > test.vcf (from R it is also possible with system() but for some reason it doesn't work...)
@@ -62,6 +73,14 @@ data_subset <- data[data$CHROM==subset_chr,]# selecting chromosome
 data_subset <- data_subset[data_subset$POS>=subset_from & data_subset$POS<= subset_to,] # selecting position
 write.csv(data_subset, paste0('vcf_subset_', subset_chr, '_', subset_from, '_', subset_to, '.vcf'))
 
+# To zadanie można w bardzo prosty sposób zrobić tabix'em:
+# $ tabix -p vcf CPCT02220079.annotated.processed.vcf.gz
+# $ tabix CPCT02220079.annotated.processed.vcf.gz 12:112204691-112247789
+#
+# W R: paczki do przetwarzania VCFów albo GRanges.
+
+
+
 #### Zadanie 4 
 ## Zakladam, ze na wykresach maja byc dlugosci insercji i delecji razem, a nie na osobnych wykresach.
 library(ggplot2)
@@ -74,6 +93,11 @@ data$del_len <- data$ins_len <- NA
 data$del_len <- nchar(data$REF)-1  
 data$ins_len <- nchar(data$ALT)-1 
 data$indel_len <- data$ins_len + data$del_len 
+# SNV -> 0 (mozna je bylo odfiltrowac jako nie-indele)
+# Zmiana dinukleotydowa (np. AC>GT) zostanie policzona jako indel.
+# Podobnie warianty multialleliczne nie zostaną poprawnie obsłużone T->TG,TGG,TGGG
+# Do tego najlepiej wykorzystać paczkę do wczytywania plików VCF, np. VariantAnnotation
+
 chromosomes <- unique(data$CHROM)
 
 # Making graphs:
@@ -120,6 +144,13 @@ gg <- ggarrange(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15
             nrow = 5, ncol = 5)
 ggsave('Indels.png', gg, height = 15, width=15)
 
+#
+#
+# Wykresy są ok, ale:
+#  - pokazują również liczby SNV (miały być jedynie indele)
+#  - implementacja nie uwzględnia możliwości wariantów multiallelicznych
+#
+
 #### Zadanie 5:
 
 library(tidyr)
@@ -129,8 +160,12 @@ library(stringr)
 data <- full_data
 data <- data %>% 
   filter(FILTER=='PASS') %>% # Filtering for PASS in FILTER
-  filter(grepl('AF=0.5', INFO)) %>% # Filtering for heterozygotes
+  filter(grepl('AF=0.5', INFO)) %>% 
+  # Filtering for heterozygotes 
+  # Plus za wiedzę że zygotyczność można wyciągnąć z AF w plikach gdzie jest jedna osoba. Ale to filtrownie grepem jest niebezpieczne - łapiesz też np. MLEAF=0.5, ktore jest w INFO.
   filter(grepl('GoNLv5_AF', INFO)) # Filtering for GoNLv5_AF present
+  # Warianty gdzie ta anotacja jest nieobecna nie wystąpiły w bazie GoNLv5, czyli są b. rzadkie. To nieintuicyjne, ale odfiltrowujesz najciekawsze hity
+
 
 data$GoNLv5_AF <- str_split(data$INFO, pattern=';GoNLv5_AF=') %>% 
     sapply( "[", 2 ) 
@@ -140,6 +175,11 @@ data$GoNLv5_AF <- str_split(data$GoNLv5_AF, pattern=';GoNLv5_AN=') %>%
 data <- data %>% filter(GoNLv5_AF<0.01)  # Filtering for GoNLv5_AF <0.01
 #write.csv(x = data, 'data_with_GoNLv5_AF_less_than_0_01.csv')
   
+
+#
+# Częściowo poprawne 
+#
+
 #### Zadanie 6:
 
 #data <- test_data
@@ -164,6 +204,10 @@ ggplot(data_for_plot, aes(CHROM, mean)) + # Creating a plot.
 ggsave('sequencing_depth_per_chromosome.png')  
 write.csv(x = data_for_plot, 'sequencing_depth_per_chromosome.csv')
 
+#
+# Dobra robota:)
+#
+
 #### Zadanie 8:
 
 # Read-in the data:
@@ -178,6 +222,10 @@ indel_data <- indel_data %>% separate(NORMAL, into = paste0(format_col_names, '_
 # into columns with different metrics
 indel_data <- indel_data %>% separate(TUMOR, into = paste0(format_col_names, '_TUMOR'), sep=':')
 # Change the comma-delimited values into dot-delimited:
+#
+# Tu masz poważny błąd. TIR i TAR to nie są pojedyncze liczby zmiennoprzecinkowe z przecinkiem zamiast kropki. 
+# To jest para liczb. Wg. manuala Strelki należało wziąć tylko pierwszy element tej listy (tier1) czyli liczbę odczytów dobrej jakości.
+#
 indel_data$TIR_NORMAL <- as.numeric(sub(",", ".", indel_data$TIR_NORMAL, fixed = TRUE))
 indel_data$TAR_NORMAL <- as.numeric(sub(",", ".", indel_data$TAR_NORMAL, fixed = TRUE))
 # Calculate the VAF for NORMAL according to the exercise task:
@@ -228,3 +276,9 @@ snv_data$VAF_TUMOR[snv_data$ALT=='C'] <- snv_data$CU_TUMOR[snv_data$ALT=='C'] / 
 
 # Save the file:
 write.csv(x = snv_data, 'snv_data.csv')
+
+#
+#
+# Ze względu na błąd powyżej, wyniki są błędne.
+# Szkoda że nie korzystasz więcej z funkcji, uprościłoby to kod i jego czytelność.
+#
